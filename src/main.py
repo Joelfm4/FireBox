@@ -20,6 +20,12 @@ class URL:
         elif self.scheme == "https":
             self.port = 443 # encrypted http
 
+        # If the URL is a port
+        if ":" in self.host:
+            self.host, port = self.host.split(":", 1)
+            self.port = int(port)
+        # http://localhost:8000/
+
 
     def request(self):
         # Create a socket
