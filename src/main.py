@@ -1,14 +1,30 @@
 import socket
+import ssl
 
 class URL:
 
+
     def __init__(self, url):
+
         self.scheme, url = url.split("://", 1)
-        assert self.scheme == "http"
+        assert self.scheme in ["http", "https"]
+
         if "/" not in url:
             url = url + "/"
+
         self.host, url = url.split("/", 1)
         self.path = "/" + url
+
+        if self.scheme == "http":
+            self.port = 80
+        elif self.scheme == "https":
+            self.port = 443 # encrypted http
+
+        # If the URL is a port
+        if ":" in self.host:
+            self.host, port = self.host.split(":", 1)
+            self.port = int(port)
+        # http://localhost:8000/
 
 
     def request(self):
@@ -18,15 +34,24 @@ class URL:
             type= socket.SOCK_STREAM,
             proto=socket.IPPROTO_TCP,
         )
+
+        # https
+        if self.scheme == "https":
+            ctx = ssl.create_default_context()
+            s = ctx.wrap_socket(s, server_hostname=self.host)
+
         # Host and Port
-        s.connect((self.host, 80))
+        s.connect((self.host, self.port))
+
 
         # Make a request
         s.send(("GET {} HTTP/1.0\r\n".format(self.path) +
                 "Host: {}\r\n\r\n".format(self.host)) \
                     .encode("utf8")) # \r\n instead of \n for newlines
+
         # Receive the response
         response = s.makefile("r", encoding="utf8", newline="\r\n")
+
         # Status
         statusline = response.readline()
         version, status, explanation = statusline.split(" ", 2)
