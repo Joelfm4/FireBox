@@ -18,8 +18,12 @@ class Browser:
 class URL:
 
     def __init__(self, url):
+
+        if "://" not in url:
+            url = "http://" + url # # Default to "http://" if no scheme provided
+
         self.scheme, url = url.split("://", 1)
-        assert self.scheme == "http"
+        assert self.scheme in ["http", "https"]
         if "/" not in url:
             url = url + "/"
         self.host, url = url.split("/", 1)
@@ -67,24 +71,36 @@ class URL:
 
 
     def show(self, body):
+
+        self.text = ""
+
         # in_tag -> when is currently between a pair of angle brackets
         in_tag = False
+
         for c in body:
             if c == "<":
                 in_tag = True
             elif c == ">":
                 in_tag = False
             elif not in_tag:
-                print(c, end="")
+                self.text += c
 
-    @staticmethod
-    def load(url):
-        body = url.request()
-        url.show(body)
+        return self.text
 
+
+    def load(self, canvas):
+        body = self.request()
+        self.show(body)
+
+        x, y = 100, 100
+        for c in self.text:
+            canvas.create_text(x , y, text=c)
+            # x += 10
 
 if __name__ == "__main__":
     import sys
+
     browser = Browser()
-    URL.load(URL(sys.argv[1]))
+    url_instance = URL(sys.argv[1])
+    url_instance.load(browser.canvas)
     browser.window.mainloop()
