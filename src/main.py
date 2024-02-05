@@ -1,10 +1,26 @@
 import socket
-import ssl
+import tkinter
+from settings import *
+
+class Browser:
+    def __init__(self):
+        self.window = tkinter.Tk()
+        self.canvas = tkinter.Canvas(
+            self.window,
+            width=WIDTH,
+            height=HEIGHT
+        )
+        self.canvas.pack()
+
+
+        self.canvas.create_rectangle(10, 20, 400, 300)
 
 class URL:
 
-
     def __init__(self, url):
+
+        if "://" not in url:
+            url = "http://" + url # # Default to "http://" if no scheme provided
 
         self.scheme, url = url.split("://", 1)
         assert self.scheme in ["http", "https"]
@@ -15,17 +31,6 @@ class URL:
         self.host, url = url.split("/", 1)
         self.path = "/" + url
 
-        if self.scheme == "http":
-            self.port = 80
-        elif self.scheme == "https":
-            self.port = 443 # encrypted http
-
-        # If the URL is a port
-        if ":" in self.host:
-            self.host, port = self.host.split(":", 1)
-            self.port = int(port)
-        # http://localhost:8000/
-
 
     def request(self):
         # Create a socket
@@ -34,24 +39,15 @@ class URL:
             type= socket.SOCK_STREAM,
             proto=socket.IPPROTO_TCP,
         )
-
-        # https
-        if self.scheme == "https":
-            ctx = ssl.create_default_context()
-            s = ctx.wrap_socket(s, server_hostname=self.host)
-
         # Host and Port
-        s.connect((self.host, self.port))
-
+        s.connect((self.host, 80))
 
         # Make a request
         s.send(("GET {} HTTP/1.0\r\n".format(self.path) +
                 "Host: {}\r\n\r\n".format(self.host)) \
                     .encode("utf8")) # \r\n instead of \n for newlines
-
         # Receive the response
         response = s.makefile("r", encoding="utf8", newline="\r\n")
-
         # Status
         statusline = response.readline()
         version, status, explanation = statusline.split(" ", 2)
@@ -77,22 +73,36 @@ class URL:
 
 
     def show(self, body):
+
+        self.text = ""
+
         # in_tag -> when is currently between a pair of angle brackets
         in_tag = False
+
         for c in body:
             if c == "<":
                 in_tag = True
             elif c == ">":
                 in_tag = False
             elif not in_tag:
-                print(c, end="")
+                self.text += c
 
-    @staticmethod
-    def load(url):
-        body = url.request()
-        url.show(body)
+        return self.text
 
+
+    def load(self, canvas):
+        body = self.request()
+        self.show(body)
+
+        x, y = 100, 100
+        for c in self.text:
+            canvas.create_text(x , y, text=c)
+            # x += 10
 
 if __name__ == "__main__":
     import sys
-    URL.load(URL(sys.argv[1]))
+
+    browser = Browser()
+    url_instance = URL(sys.argv[1])
+    url_instance.load(browser.canvas)
+    browser.window.mainloop()
