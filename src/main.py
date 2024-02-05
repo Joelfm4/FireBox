@@ -24,8 +24,10 @@ class URL:
 
         self.scheme, url = url.split("://", 1)
         assert self.scheme in ["http", "https"]
+
         if "/" not in url:
             url = url + "/"
+
         self.host, url = url.split("/", 1)
         self.path = "/" + url
 
