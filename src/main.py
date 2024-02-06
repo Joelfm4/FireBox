@@ -13,7 +13,7 @@ class Browser:
         self.canvas.pack()
 
 
-        self.canvas.create_rectangle(10, 20, 400, 300)
+        # self.canvas.create_rectangle(10, 20, 400, 300)
 
 class URL:
 
@@ -94,10 +94,15 @@ class URL:
         body = self.request()
         self.show(body)
 
-        x, y = 100, 100
+        # x, y = 100, 100
+        cursor_x, cursor_y = HSTEP, VSTEP
         for c in self.text:
-            canvas.create_text(x , y, text=c)
-            # x += 10
+            canvas.create_text(cursor_x , cursor_y, text=c)
+            cursor_x += HSTEP
+
+            if cursor_x >= WIDTH - HSTEP:
+                cursor_y += VSTEP
+                cursor_x = HSTEP
 
 if __name__ == "__main__":
     import sys
