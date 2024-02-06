@@ -10,10 +10,9 @@ class Browser:
             width=WIDTH,
             height=HEIGHT
         )
+
         self.canvas.pack()
 
-
-        # self.canvas.create_rectangle(10, 20, 400, 300)
 
 class URL:
 
@@ -33,12 +32,14 @@ class URL:
 
 
     def request(self):
+
         # Create a socket
         s = socket.socket(
             family = socket.AF_INET,
             type= socket.SOCK_STREAM,
             proto=socket.IPPROTO_TCP,
         )
+
         # Host and Port
         s.connect((self.host, 80))
 
@@ -46,15 +47,17 @@ class URL:
         s.send(("GET {} HTTP/1.0\r\n".format(self.path) +
                 "Host: {}\r\n\r\n".format(self.host)) \
                     .encode("utf8")) # \r\n instead of \n for newlines
+
         # Receive the response
         response = s.makefile("r", encoding="utf8", newline="\r\n")
+
         # Status
         statusline = response.readline()
         version, status, explanation = statusline.split(" ", 2)
 
         # Headers
-        # Note: Headers are case-insensitive and white-spaces are insignificant in HTTP header
         response_headers = {}
+        # Note: Headers are case-insensitive and white-spaces are insignificant in HTTP header
         while True:
             line = response.readline()
             if line == "\r\n": break
@@ -69,6 +72,7 @@ class URL:
         # Body
         body = response.read()
         s.close()
+
         return body
 
 
@@ -91,11 +95,12 @@ class URL:
 
 
     def load(self, canvas):
+
+        cursor_x, cursor_y = HSTEP, VSTEP
+
         body = self.request()
         self.show(body)
 
-        # x, y = 100, 100
-        cursor_x, cursor_y = HSTEP, VSTEP
         for c in self.text:
             canvas.create_text(cursor_x , cursor_y, text=c)
             cursor_x += HSTEP
@@ -103,6 +108,7 @@ class URL:
             if cursor_x >= WIDTH - HSTEP:
                 cursor_y += VSTEP
                 cursor_x = HSTEP
+
 
 if __name__ == "__main__":
     import sys
