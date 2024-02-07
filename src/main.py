@@ -1,8 +1,12 @@
 import socket
 import tkinter
+import sys
 from settings import *
 
+
 class Browser:
+
+
     def __init__(self):
         self.window = tkinter.Tk()
         self.canvas = tkinter.Canvas(
@@ -12,6 +16,25 @@ class Browser:
         )
 
         self.canvas.pack()
+        self.scroll = 0
+        self.window.bind("<Down>", self.scrolldown)
+
+    def draw(self):
+        self.canvas.delete("all")
+        for x, y, c in self.display_list:
+            self.canvas.create_text(x, y - self.scroll, text=c)
+
+
+    def load(self, url):
+        body = URL(url).request()
+        text = URL.show(body)
+        self.display_list = layout(text)
+        self.draw()
+
+
+    def scrolldown(self, e):
+        self.scroll += SCROLL_STEP
+        self.draw()
 
 
 class URL:
@@ -75,10 +98,10 @@ class URL:
 
         return body
 
+    @staticmethod
+    def show(body):
 
-    def show(self, body):
-
-        self.text = ""
+        text = ""
 
         # in_tag -> when is currently between a pair of angle brackets
         in_tag = False
@@ -89,31 +112,33 @@ class URL:
             elif c == ">":
                 in_tag = False
             elif not in_tag:
-                self.text += c
+                text += c
 
-        return self.text
+        return text
 
 
-    def load(self, canvas):
 
-        cursor_x, cursor_y = HSTEP, VSTEP
 
-        body = self.request()
-        self.show(body)
+def layout(text):
+    display_list = []
+    cursor_x, cursor_y = HSTEP, VSTEP
 
-        for c in self.text:
-            canvas.create_text(cursor_x , cursor_y, text=c)
-            cursor_x += HSTEP
+    for c in text:
+        display_list.append((cursor_x, cursor_y, c))
+        cursor_x += HSTEP
 
-            if cursor_x >= WIDTH - HSTEP:
-                cursor_y += VSTEP
-                cursor_x = HSTEP
+        if cursor_x >= WIDTH - HSTEP:
+            cursor_y += VSTEP
+            cursor_x = HSTEP
 
+    return display_list
 
 if __name__ == "__main__":
-    import sys
+    if len(sys.argv) != 2:
+        print("Usage: python browser.py <URL>")
+        sys.exit(1)
 
     browser = Browser()
-    url_instance = URL(sys.argv[1])
-    url_instance.load(browser.canvas)
+    url = sys.argv[1]
+    browser.load(url)
     browser.window.mainloop()
