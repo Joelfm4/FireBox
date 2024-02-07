@@ -15,6 +15,24 @@ Origin of the name:
 
 ### Request
 ```
+class URL:
+    def __init__(self, url):
+        # Check if the URL contains a scheme, otherwise add "http://"
+        if "://" not in url:
+            url = "http://" + url  # Default to "http://" if no scheme provided
+
+        # Split the URL by "://" and assign the appropriate scheme and the rest of the URL
+        self.scheme, url = url.split("://", 1)
+        assert self.scheme in ["http", "https"]  # Verify if the scheme is valid
+
+        # Add a slash (/) at the end of the URL if it doesn't exist
+        if "/" not in url:
+            url = url + "/"
+
+        # Split the URL by the first slash (/) to separate the host and the path
+        self.host, url = url.split("/", 1)
+        self.path = "/" + url
+
     def request(self):
 
         # Create a socket
