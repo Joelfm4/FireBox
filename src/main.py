@@ -1,8 +1,12 @@
 import socket
 import tkinter
+import sys
 from settings import *
 
+
 class Browser:
+
+
     def __init__(self):
         self.window = tkinter.Tk()
         self.canvas = tkinter.Canvas(
@@ -10,10 +14,28 @@ class Browser:
             width=WIDTH,
             height=HEIGHT
         )
+
         self.canvas.pack()
+        self.scroll = 0
+        self.window.bind("<Down>", self.scrolldown)
+
+    def draw(self):
+        self.canvas.delete("all")
+        for x, y, c in self.display_list:
+            self.canvas.create_text(x, y - self.scroll, text=c)
 
 
-        # self.canvas.create_rectangle(10, 20, 400, 300)
+    def load(self, url):
+        body = URL(url).request()
+        text = URL.show(body)
+        self.display_list = layout(text)
+        self.draw()
+
+
+    def scrolldown(self, e):
+        self.scroll += SCROLL_STEP
+        self.draw()
+
 
 class URL:
 
@@ -33,12 +55,14 @@ class URL:
 
 
     def request(self):
+
         # Create a socket
         s = socket.socket(
             family = socket.AF_INET,
             type= socket.SOCK_STREAM,
             proto=socket.IPPROTO_TCP,
         )
+
         # Host and Port
         s.connect((self.host, 80))
 
@@ -46,15 +70,17 @@ class URL:
         s.send(("GET {} HTTP/1.0\r\n".format(self.path) +
                 "Host: {}\r\n\r\n".format(self.host)) \
                     .encode("utf8")) # \r\n instead of \n for newlines
+
         # Receive the response
         response = s.makefile("r", encoding="utf8", newline="\r\n")
+
         # Status
         statusline = response.readline()
         version, status, explanation = statusline.split(" ", 2)
 
         # Headers
-        # Note: Headers are case-insensitive and white-spaces are insignificant in HTTP header
         response_headers = {}
+        # Note: Headers are case-insensitive and white-spaces are insignificant in HTTP header
         while True:
             line = response.readline()
             if line == "\r\n": break
@@ -69,12 +95,13 @@ class URL:
         # Body
         body = response.read()
         s.close()
+
         return body
 
+    @staticmethod
+    def show(body):
 
-    def show(self, body):
-
-        self.text = ""
+        text = ""
 
         # in_tag -> when is currently between a pair of angle brackets
         in_tag = False
@@ -85,29 +112,33 @@ class URL:
             elif c == ">":
                 in_tag = False
             elif not in_tag:
-                self.text += c
+                text += c
 
-        return self.text
+        return text
 
 
-    def load(self, canvas):
-        body = self.request()
-        self.show(body)
 
-        # x, y = 100, 100
-        cursor_x, cursor_y = HSTEP, VSTEP
-        for c in self.text:
-            canvas.create_text(cursor_x , cursor_y, text=c)
-            cursor_x += HSTEP
 
-            if cursor_x >= WIDTH - HSTEP:
-                cursor_y += VSTEP
-                cursor_x = HSTEP
+def layout(text):
+    display_list = []
+    cursor_x, cursor_y = HSTEP, VSTEP
+
+    for c in text:
+        display_list.append((cursor_x, cursor_y, c))
+        cursor_x += HSTEP
+
+        if cursor_x >= WIDTH - HSTEP:
+            cursor_y += VSTEP
+            cursor_x = HSTEP
+
+    return display_list
 
 if __name__ == "__main__":
-    import sys
+    if len(sys.argv) != 2:
+        print("Usage: python browser.py <URL>")
+        sys.exit(1)
 
     browser = Browser()
-    url_instance = URL(sys.argv[1])
-    url_instance.load(browser.canvas)
+    url = sys.argv[1]
+    browser.load(url)
     browser.window.mainloop()
